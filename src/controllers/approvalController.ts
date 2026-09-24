@@ -12,6 +12,10 @@ type ApprovalRoute = {
   };
 };
 
+type ApprovalRequestRoute = ApprovalRoute & {
+  Body?: Record<string, unknown>;
+};
+
 type RejectionRoute = ApprovalRoute & {
   Body: {
     reason?: unknown;
@@ -21,9 +25,15 @@ type RejectionRoute = ApprovalRoute & {
 const DEFAULT_REJECTION_REASON = "Rejected by a human reviewer.";
 
 export async function approveRequest(
-  request: FastifyRequest<ApprovalRoute>,
+  request: FastifyRequest<ApprovalRequestRoute>,
   reply: FastifyReply,
 ) {
+  const body = request.body || {};
+
+  if (typeof body !== "object" || Array.isArray(body)) {
+    return reply.code(400).send({ error: "Request body must be a JSON object." });
+  }
+
   const provisioningRequest = await prisma.provisioningRequest.findUnique({
     where: { id: request.params.id },
   });

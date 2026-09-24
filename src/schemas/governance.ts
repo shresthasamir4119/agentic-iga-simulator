@@ -13,12 +13,23 @@ export const ProvisioningActionSchema = z.object({
   reasoning: z.string(),
 });
 
-export const GovernancePlanSchema = z.object({
-  employeeId: z.string(),
-  riskScore: z.number(),
-  sodConflictsDetected: z.array(z.string()),
-  proposedActions: z.array(ProvisioningActionSchema),
-});
+export const GovernancePlanSchema = z
+  .object({
+    employeeId: z.string(),
+    riskScore: z.number(),
+    sodConflictsDetected: z.array(z.string()),
+    proposedActions: z.array(ProvisioningActionSchema),
+  })
+  .superRefine((data, ctx) => {
+    if (data.riskScore >= 0.7 && data.sodConflictsDetected.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["sodConflictsDetected"],
+        message:
+          "High risk score requires at least one explanatory entry in sodConflictsDetected",
+      });
+    }
+  });
 
 export type ProvisioningAction = z.infer<typeof ProvisioningActionSchema>;
 export type GovernancePlan = z.infer<typeof GovernancePlanSchema>;
