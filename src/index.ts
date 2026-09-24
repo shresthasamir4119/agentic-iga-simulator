@@ -4,26 +4,16 @@ import Fastify from "fastify";
 import { z } from "zod";
 import { prisma } from "./config/prisma.js";
 import {
-  ApprovalNotFoundError,
-  ApprovalStateError,
-  approveProvisioningRequest,
-  listPendingApprovals,
-  rejectProvisioningRequest,
-} from "./services/approvalService.js";
+  approveRequest,
+  rejectRequest,
+} from "./controllers/approvalController.js";
+import { listPendingApprovals } from "./services/approvalService.js";
 import { processJmlEvent } from "./services/orchestrator.js";
 
 const HrWebhookPayloadSchema = z.object({
   employeeId: z.string().min(1),
   eventType: z.string().min(1),
   hrPayload: z.record(z.string(), z.unknown()),
-});
-
-const RouteParamsSchema = z.object({
-  id: z.string().min(1),
-});
-
-const RejectionSchema = z.object({
-  reason: z.string().trim().min(1).max(500).optional(),
 });
 
 export const app = Fastify({ logger: true });
@@ -58,63 +48,8 @@ app.get("/api/approvals", async () => ({
   requests: await listPendingApprovals(),
 }));
 
-app.post("/api/approvals/:id/approve", async (request, reply) => {
-  const params = RouteParamsSchema.safeParse(request.params);
-
-  if (!params.success) {
-    return reply.code(400).send({ error: "Invalid approval request ID" });
-  }
-
-  try {
-    return await approveProvisioningRequest(params.data.id);
-  } catch (error) {
-    const statusCode =
-      error instanceof ApprovalNotFoundError
-        ? 404
-        : error instanceof ApprovalStateError
-          ? 409
-          : 500;
-
-    return reply.code(statusCode).send({
-      error: error instanceof Error ? error.message : "Approval failed",
-    });
-  }
-});
-
-app.post("/api/approvals/:id/reject", async (request, reply) => {
-  const params = RouteParamsSchema.safeParse(request.params);
-
-  if (!params.success) {
-    return reply.code(400).send({ error: "Invalid approval request ID" });
-  }
-
-  const body = RejectionSchema.safeParse(request.body ?? {});
-
-  if (!body.success) {
-    return reply.code(400).send({
-      error: "Invalid rejection payload",
-      details: body.error.flatten(),
-    });
-  }
-
-  try {
-    return await rejectProvisioningRequest(
-      params.data.id,
-      body.data.reason ?? "Rejected by a human reviewer.",
-    );
-  } catch (error) {
-    const statusCode =
-      error instanceof ApprovalNotFoundError
-        ? 404
-        : error instanceof ApprovalStateError
-          ? 409
-          : 500;
-
-    return reply.code(statusCode).send({
-      error: error instanceof Error ? error.message : "Rejection failed",
-    });
-  }
-});
+app.post("/api/approvals/:id/approve", approveRequest);
+app.post("/api/approvals/:id/reject", rejectRequest);
 
 app.get("/api/audit-logs", async () => {
   const logs = await prisma.auditLog.findMany({

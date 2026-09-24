@@ -18,6 +18,8 @@ enum ProvisioningRequestStatus {
   PENDING_HITL
   EXECUTED
   VETOED
+  APPROVED_AND_EXECUTED
+  REJECTED_BY_HUMAN
 }
 
 model Employee {
