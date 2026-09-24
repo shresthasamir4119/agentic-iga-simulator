@@ -12,7 +12,7 @@ coverage/
 !.env.example
 
 # Generated Prisma client
-/generated/prisma/
+/src/generated/prisma/
 
 # Logs
 *.log
