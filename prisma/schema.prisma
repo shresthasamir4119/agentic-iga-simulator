@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  SUSPENDED
+  TERMINATED
+}
+
+enum ProvisioningRequestStatus {
+  PENDING_AI
+  PENDING_HITL
+  EXECUTED
+  VETOED
+}
+
+model Employee {
+  id                   String                @id @default(uuid()) @db.Uuid
+  firstName            String
+  lastName             String
+  email                String                @unique
+  department           String
+  title                String
+  status               EmployeeStatus        @default(ACTIVE)
+  provisioningRequests ProvisioningRequest[]
+}
+
+model ProvisioningRequest {
+  id              String                    @id @default(uuid()) @db.Uuid
+  employeeId      String                    @db.Uuid
+  employee        Employee                  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  eventType       String
+  riskScore       Float
+  sodConflicts    String[]
+  stagedPayload   Json
+  status          ProvisioningRequestStatus @default(PENDING_AI)
+  rejectionReason String?
+  auditLogs       AuditLog[]
+}
+
+model AuditLog {
+  id           String              @id @default(uuid()) @db.Uuid
+  requestId    String              @db.Uuid
+  request      ProvisioningRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  targetSystem String
+  action       String
+  status       String
+  details      Json
+}
