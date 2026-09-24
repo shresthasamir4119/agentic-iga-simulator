@@ -4,6 +4,7 @@ import type {
   ProvisioningRequest,
 } from "../generated/prisma/client.js";
 import { AdapterRegistry } from "../adapters/registry.js";
+import type { GovernancePlan } from "../schemas/governance.js";
 import { generateGovernancePlan } from "./aiEngine.js";
 import { PolicyVetoEngine } from "./policyVeto.js";
 
@@ -15,6 +16,48 @@ function toJsonValue(value: unknown): Prisma.InputJsonValue {
   }
 
   return JSON.parse(serialized) as Prisma.InputJsonValue;
+}
+
+export async function executeProvisioningActions(
+  requestId: string,
+  plan: GovernancePlan,
+): Promise<void> {
+  for (const proposedAction of plan.proposedActions) {
+    try {
+      const response = await AdapterRegistry.getAdapter(
+        proposedAction.targetSystem,
+      ).execute(proposedAction.action, proposedAction.parameters);
+
+      if (response?.success === false) {
+        throw new Error("The provisioning adapter reported a failed action.");
+      }
+
+      await prisma.auditLog.create({
+        data: {
+          requestId,
+          targetSystem: proposedAction.targetSystem,
+          action: proposedAction.action,
+          status: "SUCCESS",
+          details: toJsonValue({ response }),
+        },
+      });
+    } catch (error) {
+      await prisma.auditLog.create({
+        data: {
+          requestId,
+          targetSystem: proposedAction.targetSystem,
+          action: proposedAction.action,
+          status: "FAILURE",
+          details: toJsonValue({
+            error:
+              error instanceof Error
+                ? { name: error.name, message: error.message }
+                : { message: String(error) },
+          }),
+        },
+      });
+    }
+  }
 }
 
 export async function processJmlEvent(
@@ -74,42 +117,7 @@ export async function processJmlEvent(
     },
   });
 
-  for (const proposedAction of plan.proposedActions) {
-    try {
-      const response = await AdapterRegistry.getAdapter(
-        proposedAction.targetSystem,
-      ).execute(proposedAction.action, proposedAction.parameters);
-
-      if (response?.success === false) {
-        throw new Error("The provisioning adapter reported a failed action.");
-      }
-
-      await prisma.auditLog.create({
-        data: {
-          requestId: provisioningRequest.id,
-          targetSystem: proposedAction.targetSystem,
-          action: proposedAction.action,
-          status: "SUCCESS",
-          details: toJsonValue({ response }),
-        },
-      });
-    } catch (error) {
-      await prisma.auditLog.create({
-        data: {
-          requestId: provisioningRequest.id,
-          targetSystem: proposedAction.targetSystem,
-          action: proposedAction.action,
-          status: "FAILURE",
-          details: toJsonValue({
-            error:
-              error instanceof Error
-                ? { name: error.name, message: error.message }
-                : { message: String(error) },
-          }),
-        },
-      });
-    }
-  }
+  await executeProvisioningActions(provisioningRequest.id, plan);
 
   return prisma.provisioningRequest.update({
     where: { id: provisioningRequest.id },

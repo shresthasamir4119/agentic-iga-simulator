@@ -52,4 +52,5 @@ model AuditLog {
   action       String
   status       String
   details      Json
+  createdAt    DateTime            @default(now())
 }

@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="en" class="bg-slate-950">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Zero-Trust Identity Governance and Access operations dashboard"
+    />
+    <title>ZeroTrust IGA Control Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+              mono: ["JetBrains Mono", "ui-monospace", "monospace"],
+            },
+            boxShadow: {
+              glow: "0 0 40px rgba(56, 189, 248, 0.12)",
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background-image:
+          radial-gradient(circle at 10% 0%, rgba(14, 165, 233, 0.12), transparent 28rem),
+          radial-gradient(circle at 90% 10%, rgba(168, 85, 247, 0.1), transparent 25rem);
+      }
+
+      .grid-overlay {
+        background-image:
+          linear-gradient(rgba(148, 163, 184, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
+        background-size: 32px 32px;
+      }
+
+      .glass-panel {
+        background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.88));
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.24);
+        backdrop-filter: blur(18px);
+      }
+
+      .scenario-button {
+        transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+      }
+
+      .scenario-button:hover {
+        transform: translateY(-2px);
+      }
+
+      .status-dot {
+        box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1), 0 0 16px rgba(34, 197, 94, 0.8);
+      }
+
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.6);
+      }
+
+      ::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: rgba(100, 116, 139, 0.55);
+      }
+    </style>
+  </head>
+
+  <body class="min-h-screen font-sans text-slate-200 antialiased">
+    <div class="pointer-events-none fixed inset-0 grid-overlay"></div>
+
+    <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
+      <div class="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-400/10 text-cyan-300 shadow-glow">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3 4.5 6.2v5.1c0 4.6 3.2 8.8 7.5 10 4.3-1.2 7.5-5.4 7.5-10V6.2L12 3Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="m9.3 12 1.8 1.8 3.8-4" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-extrabold tracking-wide text-white">ZEROTRUST IGA</p>
+            <p class="font-mono text-[10px] uppercase tracking-[0.22em] text-slate-500">Control Center</p>
+          </div>
+        </div>
+
+        <nav class="hidden items-center gap-7 text-sm font-medium text-slate-400 lg:flex">
+          <a class="transition hover:text-cyan-300" href="#trigger-event">Trigger</a>
+          <a class="transition hover:text-cyan-300" href="#approvals">Approvals</a>
+          <a class="transition hover:text-cyan-300" href="#target-state">Target State</a>
+          <a class="transition hover:text-cyan-300" href="#audit-log">Audit Log</a>
+        </nav>
+
+        <div class="flex items-center gap-3 rounded-full border border-slate-800 bg-slate-900/80 px-3 py-1.5">
+          <span id="connection-dot" class="h-2 w-2 rounded-full bg-amber-400"></span>
+          <span id="connection-label" class="font-mono text-[10px] uppercase tracking-widest text-slate-400">Connecting</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="relative mx-auto max-w-[1600px] space-y-8 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+      <section class="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+        <div>
+          <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/5 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-cyan-300">
+            <span class="h-1.5 w-1.5 rounded-full bg-cyan-300"></span>
+            Live governance operations
+          </div>
+          <h1 class="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Identity Security Overview</h1>
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+            Simulate HR lifecycle events, review AI risk decisions, and monitor downstream provisioning state.
+          </p>
+        </div>
+        <div class="flex items-center gap-6 rounded-2xl border border-slate-800/80 bg-slate-900/50 px-5 py-3">
+          <div>
+            <p class="font-mono text-[10px] uppercase tracking-widest text-slate-500">Policy Engine</p>
+            <p class="mt-1 text-sm font-semibold text-emerald-300">Enforced</p>
+          </div>
+          <div class="h-8 w-px bg-slate-800"></div>
+          <div>
+            <p class="font-mono text-[10px] uppercase tracking-widest text-slate-500">Last Refresh</p>
+            <p id="last-refresh" class="mt-1 font-mono text-sm text-slate-300">—</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="trigger-event" class="glass-panel scroll-mt-28 rounded-2xl p-5 sm:p-7">
+        <div class="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <div class="flex items-start gap-3">
+            <div class="rounded-xl border border-cyan-400/20 bg-cyan-400/10 p-2.5 text-cyan-300">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 2 4.5 13H11l-1 9 8.5-12H12l1-8Z" />
+              </svg>
+            </div>
+            <div>
+              <p class="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan-400">01 / Simulation</p>
+              <h2 class="mt-1 text-xl font-bold text-white">Trigger HR Event</h2>
+              <p class="mt-1 text-sm text-slate-500">Send a JML event to the asynchronous governance pipeline.</p>
+            </div>
+          </div>
+          <span class="w-fit rounded-full border border-amber-400/20 bg-amber-400/5 px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-amber-300">Returns 202 Accepted</span>
+        </div>
+
+        <form id="event-form" class="grid gap-5 xl:grid-cols-[1.1fr_1.4fr]">
+          <div class="space-y-4">
+            <div>
+              <label for="employee-id" class="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">Employee ID</label>
+              <input id="employee-id" name="employeeId" required autocomplete="off" class="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 font-mono text-sm text-slate-100 outline-none transition placeholder:text-slate-700 focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/10" placeholder="00000000-0000-0000-0000-000000000000" />
+            </div>
+            <div>
+              <label for="event-type" class="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">Event Type</label>
+              <select id="event-type" name="eventType" class="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/10">
+                <option value="ONBOARDING">ONBOARDING</option>
+                <option value="TRANSFER">TRANSFER</option>
+                <option value="TERMINATION">TERMINATION</option>
+              </select>
+            </div>
+            <div>
+              <label for="hr-payload" class="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">HR Payload (JSON)</label>
+              <textarea id="hr-payload" name="hrPayload" rows="7" spellcheck="false" class="w-full resize-y rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 font-mono text-xs leading-5 text-slate-300 outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/10"></textarea>
+            </div>
+            <button id="trigger-button" type="submit" class="flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300 focus:outline-none focus:ring-4 focus:ring-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m5 12 14-7-4 14-3-6-7-1Z" />
+              </svg>
+              Trigger Event
+            </button>
+            <p id="event-status" class="min-h-5 text-center text-xs text-slate-500" aria-live="polite"></p>
+          </div>
+
+          <div>
+            <div class="mb-3 flex items-center justify-between">
+              <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Preset Scenarios</p>
+              <p class="text-xs text-slate-600">Select one to populate and submit</p>
+            </div>
+            <div class="grid gap-3">
+              <button type="button" data-scenario="scenario1" class="scenario-button group rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4 text-left hover:border-emerald-400/50 hover:bg-emerald-400/10">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <div class="mb-2 flex items-center gap-2">
+                      <span class="rounded-md bg-emerald-400/10 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-emerald-300">Low Risk</span>
+                      <span class="font-mono text-[10px] text-slate-600">SCN-01</span>
+                    </div>
+                    <p class="font-semibold text-slate-100">Scenario 1: Onboard Frontend Dev (Low Risk)</p>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">Creates standard developer access with separation-of-duties checks enabled.</p>
+                  </div>
+                  <svg class="mt-1 h-5 w-5 shrink-0 text-emerald-300 transition group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" /></svg>
+                </div>
+              </button>
+
+              <button type="button" data-scenario="scenario2" class="scenario-button group rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4 text-left hover:border-amber-400/50 hover:bg-amber-400/10">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <div class="mb-2 flex items-center gap-2">
+                      <span class="rounded-md bg-amber-400/10 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-amber-300">High Risk / SoD</span>
+                      <span class="font-mono text-[10px] text-slate-600">SCN-02</span>
+                    </div>
+                    <p class="font-semibold text-slate-100">Scenario 2: Transfer Sales Rep to Dev + AWS Prod (High Risk / SoD Conflict)</p>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">Requests privileged cloud access and intentionally exercises human approval.</p>
+                  </div>
+                  <svg class="mt-1 h-5 w-5 shrink-0 text-amber-300 transition group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" /></svg>
+                </div>
+              </button>
+
+              <button type="button" data-scenario="scenario3" class="scenario-button group rounded-2xl border border-rose-400/20 bg-rose-400/5 p-4 text-left hover:border-rose-400/50 hover:bg-rose-400/10">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <div class="mb-2 flex items-center gap-2">
+                      <span class="rounded-md bg-rose-400/10 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-rose-300">Policy Veto</span>
+                      <span class="font-mono text-[10px] text-slate-600">SCN-03</span>
+                    </div>
+                    <p class="font-semibold text-slate-100">Scenario 3: Terminate Suspended User (Policy Vetoed)</p>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">Attempts prohibited provisioning actions for a terminated employee.</p>
+                  </div>
+                  <svg class="mt-1 h-5 w-5 shrink-0 text-rose-300 transition group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" /></svg>
+                </div>
+              </button>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <section id="approvals" class="glass-panel scroll-mt-28 rounded-2xl p-5 sm:p-7">
+        <div class="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <div class="flex items-start gap-3">
+            <div class="rounded-xl border border-amber-400/20 bg-amber-400/10 p-2.5 text-amber-300">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.8 11.2 15 15.5 9.5M12 3 4.5 6.2v5.1c0 4.6 3.2 8.8 7.5 10 4.3-1.2 7.5-5.4 7.5-10V6.2L12 3Z" /></svg>
+            </div>
+            <div>
+              <p class="font-mono text-[10px] uppercase tracking-[0.2em] text-amber-400">02 / Human Review</p>
+              <div class="mt-1 flex items-center gap-3">
+                <h2 class="text-xl font-bold text-white">Pending Approvals Queue</h2>
+                <span id="approval-count" class="rounded-full bg-amber-400/10 px-2.5 py-0.5 font-mono text-xs font-bold text-amber-300">0</span>
+              </div>
+              <p class="mt-1 text-sm text-slate-500">High-risk plans remain staged until an authorized reviewer decides.</p>
+            </div>
+          </div>
+          <button id="refresh-approvals" type="button" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6v5h-5M4 18v-5h5M18.4 9A7 7 0 0 0 6.1 6.1L4 8m16 8-2.1 1.9A7 7 0 0 1 5.6 15" /></svg>
+            Refresh Queue
+          </button>
+        </div>
+
+        <div id="approvals-container" aria-live="polite">
+          <div class="flex min-h-40 items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-950/30">
+            <div class="flex items-center gap-3 text-sm text-slate-500">
+              <span class="h-5 w-5 animate-spin rounded-full border-2 border-slate-700 border-t-cyan-400"></span>
+              Loading approval requests…
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="target-state" class="scroll-mt-28">
+        <div class="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+          <div class="flex items-start gap-3">
+            <div class="rounded-xl border border-violet-400/20 bg-violet-400/10 p-2.5 text-violet-300">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7.5 12 3l8 4.5M4 12l8 4.5 8-4.5M4 16.5l8 4.5 8-4.5" /></svg>
+            </div>
+            <div>
+              <p class="font-mono text-[10px] uppercase tracking-[0.2em] text-violet-400">03 / Downstream Systems</p>
+              <h2 class="mt-1 text-xl font-bold text-white">Live Target Application State</h2>
+              <p class="mt-1 text-sm text-slate-500">Current mocked users, groups, and recent provisioning activity.</p>
+            </div>
+          </div>
+          <span class="w-fit rounded-full border border-emerald-400/20 bg-emerald-400/5 px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-emerald-300">3 systems connected</span>
+        </div>
+
+        <div class="grid gap-4 lg:grid-cols-3">
+          <article data-target-card="ACTIVE_DIRECTORY" class="glass-panel group rounded-2xl p-5 transition hover:-translate-y-1 hover:border-blue-400/30">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300 ring-1 ring-blue-400/20">
+                  <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 21V5l8-3v19M12 8h8v13M7.5 7h.01M7.5 11h.01M7.5 15h.01M15.5 12h.01M15.5 16h.01M2 21h20" /></svg>
+                </div>
+                <div>
+                  <h3 class="font-bold text-white">Active Directory</h3>
+                  <p class="font-mono text-[10px] uppercase tracking-wider text-blue-300">Corporate Identity</p>
+                </div>
+              </div>
+              <span class="status-dot h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+            </div>
+            <div class="mt-6 grid grid-cols-2 gap-3">
+              <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+                <p class="font-mono text-2xl font-bold text-white">1,248</p>
+                <p class="mt-1 text-xs text-slate-500">Provisioned users</p>
+              </div>
+              <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+                <p class="font-mono text-2xl font-bold text-white">32</p>
+                <p class="mt-1 text-xs text-slate-500">Managed groups</p>
+              </div>
+            </div>
+            <div class="mt-4 border-t border-slate-800 pt-4">
+              <p class="font-mono text-[9px] uppercase tracking-widest text-slate-600">Last activity</p>
+              <p data-last-activity class="mt-1 truncate text-xs text-slate-400">No recent changes</p>
+            </div>
+          </article>
+
+          <article data-target-card="SLACK" class="glass-panel group rounded-2xl p-5 transition hover:-translate-y-1 hover:border-fuchsia-400/30">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-fuchsia-500/10 text-fuchsia-300 ring-1 ring-fuchsia-400/20">
+                  <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9.5 4.5a2 2 0 1 1-2 2h2v-2Zm0 0V2m5 2.5a2 2 0 1 1 2 2h-2v-2Zm2 0h2.5M14.5 9.5a2 2 0 1 1 2-2v2h-2Zm0 0h2.5M9.5 14.5a2 2 0 1 1-2-2h2v2Zm0 0v2.5m5-2.5a2 2 0 1 1 2 2h-2v-2Zm2 0h2.5" /></svg>
+                </div>
+                <div>
+                  <h3 class="font-bold text-white">Slack</h3>
+                  <p class="font-mono text-[10px] uppercase tracking-wider text-fuchsia-300">Collaboration</p>
+                </div>
+              </div>
+              <span class="status-dot h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+            </div>
+            <div class="mt-6 grid grid-cols-2 gap-3">
+              <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+                <p class="font-mono text-2xl font-bold text-white">842</p>
+                <p class="mt-1 text-xs text-slate-500">Active members</p>
+              </div>
+              <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+                <p class="font-mono text-2xl font-bold text-white">46</p>
+                <p class="mt-1 text-xs text-slate-500">Managed channels</p>
+              </div>
+            </div>
+            <div class="mt-4 border-t border-slate-800 pt-4">
+              <p class="font-mono text-[9px] uppercase tracking-widest text-slate-600">Last activity</p>
+              <p data-last-activity class="mt-1 truncate text-xs text-slate-400">No recent changes</p>
+            </div>
+          </article>
+
+          <article data-target-card="GITHUB" class="glass-panel group rounded-2xl p-5 transition hover:-translate-y-1 hover:border-slate-300/20">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-300/10 text-slate-200 ring-1 ring-slate-300/20">
+                  <svg class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .7a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2.24c-3.22.7-3.9-1.37-3.9-1.37-.52-1.34-1.28-1.7-1.28-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.57-.29-5.27-1.29-5.27-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.16 1.18A10.99 10.99 0 0 1 12 6.13c.98 0 1.95.13 2.87.39 2.2-1.49 3.16-1.18 3.16-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.71 5.39-5.29 5.68.42.36.79 1.07.79 2.16v3.25c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .7Z" /></svg>
+                </div>
+                <div>
+                  <h3 class="font-bold text-white">GitHub</h3>
+                  <p class="font-mono text-[10px] uppercase tracking-wider text-slate-300">Developer Platform</p>
+                </div>
+              </div>
+              <span class="status-dot h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+            </div>
+            <div class="mt-6 grid grid-cols-2 gap-3">
+              <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+                <p class="font-mono text-2xl font-bold text-white">126</p>
+                <p class="mt-1 text-xs text-slate-500">Managed members</p>
+              </div>
+              <div class="rounded-xl border border-slate-800 bg-slate-950/50 p-3">
+                <p class="font-mono text-2xl font-bold text-white">9</p>
+                <p class="mt-1 text-xs text-slate-500">Provisioned teams</p>
+              </div>
+            </div>
+            <div class="mt-4 border-t border-slate-800 pt-4">
+              <p class="font-mono text-[9px] uppercase tracking-widest text-slate-600">Last activity</p>
+              <p data-last-activity class="mt-1 truncate text-xs text-slate-400">No recent changes</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="audit-log" class="glass-panel scroll-mt-28 rounded-2xl p-5 sm:p-7">
+        <div class="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <div class="flex items-start gap-3">
+            <div class="rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-2.5 text-emerald-300">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7 3h10v4H7V3Zm-2 5h14v13H5V8Zm4 4h6m-6 3h6" /></svg>
+            </div>
+            <div>
+              <p class="font-mono text-[10px] uppercase tracking-[0.2em] text-emerald-400">04 / Accountability</p>
+              <div class="mt-1 flex items-center gap-2">
+                <h2 class="text-xl font-bold text-white">Immutable Audit Log</h2>
+                <svg class="h-4 w-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-label="Append-only log"><path stroke-linecap="round" stroke-linejoin="round" d="M8 11V8a4 4 0 1 1 8 0v3m-9 0h10v9H7v-9Z" /></svg>
+              </div>
+              <p class="mt-1 text-sm text-slate-500">Append-only history of every downstream provisioning attempt.</p>
+            </div>
+          </div>
+          <button id="refresh-audit" type="button" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6v5h-5M4 18v-5h5M18.4 9A7 7 0 0 0 6.1 6.1L4 8m16 8-2.1 1.9A7 7 0 0 1 5.6 15" /></svg>
+            Refresh Audit
+          </button>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-slate-800">
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[760px] text-left text-sm">
+              <thead class="border-b border-slate-800 bg-slate-950/70 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+                <tr>
+                  <th class="px-5 py-4 font-semibold">Timestamp</th>
+                  <th class="px-5 py-4 font-semibold">Target System</th>
+                  <th class="px-5 py-4 font-semibold">Action</th>
+                  <th class="px-5 py-4 font-semibold">Status</th>
+                  <th class="px-5 py-4 text-right font-semibold">Event ID</th>
+                </tr>
+              </thead>
+              <tbody id="audit-log-body" class="divide-y divide-slate-800/80">
+                <tr>
+                  <td colspan="5" class="px-5 py-14 text-center text-slate-500">Loading immutable audit events…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <footer class="flex flex-col justify-between gap-3 border-t border-slate-800/80 pt-6 text-xs text-slate-600 sm:flex-row sm:items-center">
+        <p>ZeroTrust IGA Control Center · Mock integrations enabled</p>
+        <p class="font-mono uppercase tracking-wider">Auto-refresh every 15 seconds</p>
+      </footer>
+    </main>
+
+    <div id="toast" class="pointer-events-none fixed bottom-5 right-5 z-50 translate-y-4 opacity-0 transition duration-200" role="status" aria-live="polite">
+      <div id="toast-content" class="flex max-w-sm items-center gap-3 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 shadow-2xl"></div>
+    </div>
+
+    <script>
+      const SCENARIOS = {
+        scenario1: {
+          employeeId: "11111111-1111-4111-8111-111111111111",
+          eventType: "ONBOARDING",
+          hrPayload: {
+            firstName: "Maya",
+            lastName: "Chen",
+            email: "maya.chen@example.com",
+            department: "Engineering",
+            title: "Frontend Developer",
+            manager: "Sofia Patel",
+            location: "Remote / US",
+            requestedGroups: ["All Employees", "Engineering"]
+          }
+        },
+        scenario2: {
+          employeeId: "22222222-2222-4222-8222-222222222222",
+          eventType: "TRANSFER",
+          hrPayload: {
+            firstName: "Jordan",
+            lastName: "Lee",
+            email: "jordan.lee@example.com",
+            previousDepartment: "Sales",
+            department: "Engineering",
+            title: "Cloud Developer",
+            requestedGroups: ["All Employees", "Engineering", "AWS-Production"],
+            requestedRoles: ["Developer", "AWSProductionAdmin"],
+            managerApproval: false
+          }
+        },
+        scenario3: {
+          employeeId: "33333333-3333-4333-8333-333333333333",
+          eventType: "TERMINATION",
+          hrPayload: {
+            firstName: "Alex",
+            lastName: "Morgan",
+            email: "alex.morgan@example.com",
+            department: "Finance",
+            title: "Financial Analyst",
+            priorStatus: "SUSPENDED",
+            terminationReason: "End of contract",
+            requestedActions: ["CREATE_ACCOUNT", "ADD_TO_GROUP", "GRANT_ORG_ROLE"]
+          }
+        }
+      };
+
+      const eventForm = document.querySelector("#event-form");
+      const employeeIdInput = document.querySelector("#employee-id");
+      const eventTypeInput = document.querySelector("#event-type");
+      const hrPayloadInput = document.querySelector("#hr-payload");
+      const triggerButton = document.querySelector("#trigger-button");
+      const eventStatus = document.querySelector("#event-status");
+      const approvalsContainer = document.querySelector("#approvals-container");
+      const approvalCount = document.querySelector("#approval-count");
+      const auditLogBody = document.querySelector("#audit-log-body");
+      const connectionDot = document.querySelector("#connection-dot");
+      const connectionLabel = document.querySelector("#connection-label");
+      const lastRefresh = document.querySelector("#last-refresh");
+      const toast = document.querySelector("#toast");
+      const toastContent = document.querySelector("#toast-content");
+
+      let toastTimer;
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function formatTimestamp(value) {
+        if (!value) return "—";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "—";
+        return new Intl.DateTimeFormat(undefined, {
+          month: "short",
+          day: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        }).format(date);
+      }
+
+      function showToast(message, tone = "success") {
+        clearTimeout(toastTimer);
+        const toneClasses = tone === "error"
+          ? "border-rose-500/40 text-rose-200"
+          : "border-emerald-500/40 text-emerald-100";
+
+        toastContent.className = `flex max-w-sm items-center gap-3 rounded-xl border bg-slate-900 px-4 py-3 text-sm shadow-2xl ${toneClasses}`;
+        toastContent.textContent = message;
+        toast.classList.remove("translate-y-4", "opacity-0");
+        toastTimer = setTimeout(() => {
+          toast.classList.add("translate-y-4", "opacity-0");
+        }, 3500);
+      }
+
+      async function apiRequest(url, options = {}) {
+        const response = await fetch(url, {
+          ...options,
+          headers: { "Content-Type": "application/json", ...(options.headers ?? {}) }
+        });
+
+        const data = response.status === 204 ? null : await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(data?.error ?? `Request failed with status ${response.status}`);
+        }
+        return data;
+      }
+
+      function populateScenario(scenario) {
+        employeeIdInput.value = scenario.employeeId;
+        eventTypeInput.value = scenario.eventType;
+        hrPayloadInput.value = JSON.stringify(scenario.hrPayload, null, 2);
+      }
+
+      async function triggerEvent(scenario) {
+        if (scenario) populateScenario(scenario);
+
+        let hrPayload;
+        try {
+          hrPayload = JSON.parse(hrPayloadInput.value);
+        } catch {
+          eventStatus.textContent = "HR payload must be valid JSON.";
+          eventStatus.className = "min-h-5 text-center text-xs text-rose-400";
+          showToast("The HR payload is not valid JSON.", "error");
+          return;
+        }
+
+        triggerButton.disabled = true;
+        triggerButton.textContent = "Dispatching…";
+        eventStatus.textContent = "Submitting event…";
+        eventStatus.className = "min-h-5 text-center text-xs text-cyan-300";
+
+        try {
+          const result = await apiRequest("/api/webhooks/hr", {
+            method: "POST",
+            body: JSON.stringify({
+              employeeId: employeeIdInput.value.trim(),
+              eventType: eventTypeInput.value,
+              hrPayload
+            })
+          });
+
+          eventStatus.textContent = `Accepted (${result?.accepted ? "202" : "queued"}). The governance engine is processing asynchronously.`;
+          eventStatus.className = "min-h-5 text-center text-xs text-emerald-400";
+          showToast("HR event accepted for asynchronous processing.");
+        } catch (error) {
+          eventStatus.textContent = error.message;
+          eventStatus.className = "min-h-5 text-center text-xs text-rose-400";
+          showToast(error.message, "error");
+        } finally {
+          triggerButton.disabled = false;
+          triggerButton.innerHTML = `
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m5 12 14-7-4 14-3-6-7-1Z" />
+            </svg>
+            Trigger Event`;
+          setTimeout(refreshDashboard, 500);
+        }
+      }
+
+      function renderApprovals(requests) {
+        approvalCount.textContent = String(requests.length);
+
+        if (requests.length === 0) {
+          approvalsContainer.innerHTML = `
+            <div class="flex min-h-40 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-950/30 text-center">
+              <div class="mb-3 rounded-full bg-emerald-400/10 p-3 text-emerald-300">
+                <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6" /></svg>
+              </div>
+              <p class="text-sm font-semibold text-slate-300">Approval queue is clear</p>
+              <p class="mt-1 text-xs text-slate-600">High-risk governance plans will appear here.</p>
+            </div>`;
+          return;
+        }
+
+        approvalsContainer.innerHTML = `
+          <div class="grid gap-4">
+            ${requests.map((request) => {
+              const risk = Number(request.riskScore ?? 0);
+              const riskPercent = Math.round(risk * 100);
+              const conflicts = Array.isArray(request.sodConflicts) ? request.sodConflicts : [];
+              return `
+                <article class="rounded-2xl border border-amber-400/20 bg-amber-400/[0.035] p-5 transition hover:border-amber-400/35" data-approval-row="${escapeHtml(request.id)}">
+                  <div class="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="font-bold text-white">${escapeHtml(request.employeeName || "Unknown Employee")}</h3>
+                        <span class="rounded-full border border-rose-400/20 bg-rose-400/10 px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-rose-300">Pending HITL</span>
+                      </div>
+                      <p class="mt-1 truncate font-mono text-[10px] text-slate-600">${escapeHtml(request.id)} · ${escapeHtml(request.eventType)}</p>
+                      <div class="mt-4">
+                        <p class="mb-2 font-mono text-[9px] uppercase tracking-widest text-slate-600">Detected SoD conflicts</p>
+                        <div class="flex flex-wrap gap-2">
+                          ${conflicts.length
+                            ? conflicts.map((conflict) => `<span class="rounded-lg border border-rose-400/15 bg-rose-400/5 px-2.5 py-1 text-xs text-rose-200">${escapeHtml(conflict)}</span>`).join("")
+                            : `<span class="text-xs text-slate-600">No machine-detected conflicts</span>`}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="w-full shrink-0 lg:w-56">
+                      <div class="mb-2 flex items-center justify-between">
+                        <span class="font-mono text-[9px] uppercase tracking-widest text-slate-500">AI Risk Score</span>
+                        <span class="font-mono text-lg font-bold text-rose-300">${riskPercent}%</span>
+                      </div>
+                      <div class="h-2 overflow-hidden rounded-full bg-slate-800">
+                        <div class="h-full rounded-full bg-gradient-to-r from-amber-400 to-rose-500" style="width: ${Math.min(100, Math.max(0, riskPercent))}%"></div>
+                      </div>
+                    </div>
+
+                    <div class="flex shrink-0 gap-2">
+                      <button type="button" data-approval-action="approve" data-request-id="${escapeHtml(request.id)}" class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-400 px-4 py-2.5 text-xs font-bold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6" /></svg>
+                        Approve
+                      </button>
+                      <button type="button" data-approval-action="reject" data-request-id="${escapeHtml(request.id)}" class="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-400/30 bg-rose-400/5 px-4 py-2.5 text-xs font-bold text-rose-300 transition hover:bg-rose-400/15 disabled:cursor-not-allowed disabled:opacity-50">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m6 6 12 12M18 6 6 18" /></svg>
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                </article>`;
+            }).join("")}
+          </div>`;
+      }
+
+      async function loadApprovals({ showLoading = false } = {}) {
+        if (showLoading) {
+          approvalsContainer.innerHTML = `
+            <div class="flex min-h-40 items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-950/30">
+              <div class="flex items-center gap-3 text-sm text-slate-500">
+                <span class="h-5 w-5 animate-spin rounded-full border-2 border-slate-700 border-t-cyan-400"></span>
+                Loading approval requests…
+              </div>
+            </div>`;
+        }
+
+        try {
+          const data = await apiRequest("/api/approvals");
+          renderApprovals(Array.isArray(data?.requests) ? data.requests : []);
+        } catch (error) {
+          approvalsContainer.innerHTML = `
+            <div class="rounded-2xl border border-rose-400/20 bg-rose-400/5 p-5 text-sm text-rose-300">
+              Unable to load approvals: ${escapeHtml(error.message)}
+            </div>`;
+          throw error;
+        }
+      }
+
+      async function reviewApproval(button) {
+        const requestId = button.dataset.requestId;
+        const action = button.dataset.approvalAction;
+        const row = button.closest("[data-approval-row]");
+        const buttons = row ? [...row.querySelectorAll("button[data-approval-action]")] : [button];
+
+        buttons.forEach((item) => { item.disabled = true; });
+        button.textContent = action === "approve" ? "Approving…" : "Rejecting…";
+
+        try {
+          await apiRequest(`/api/approvals/${encodeURIComponent(requestId)}/${action}`, {
+            method: "POST",
+            body: action === "reject"
+              ? JSON.stringify({ reason: "Rejected from the governance dashboard." })
+              : undefined
+          });
+          showToast(action === "approve" ? "Request approved and actions dispatched." : "Request rejected and marked VETOED.");
+          await refreshDashboard();
+        } catch (error) {
+          showToast(error.message, "error");
+          buttons.forEach((item) => { item.disabled = false; });
+          await loadApprovals();
+        }
+      }
+
+      function updateTargetActivity(logs) {
+        const latestBySystem = new Map();
+        for (const log of logs) {
+          if (!latestBySystem.has(log.targetSystem)) latestBySystem.set(log.targetSystem, log);
+        }
+
+        document.querySelectorAll("[data-target-card]").forEach((card) => {
+          const targetSystem = card.dataset.targetCard;
+          const activity = card.querySelector("[data-last-activity]");
+          const latest = latestBySystem.get(targetSystem);
+          activity.textContent = latest
+            ? `${latest.action} · ${formatTimestamp(latest.createdAt)}`
+            : "No recent changes";
+        });
+      }
+
+      function renderAuditLogs(logs) {
+        updateTargetActivity(logs);
+
+        if (logs.length === 0) {
+          auditLogBody.innerHTML = `
+            <tr><td colspan="5" class="px-5 py-14 text-center text-slate-500">No audit events have been recorded.</td></tr>`;
+          return;
+        }
+
+        auditLogBody.innerHTML = logs.map((log) => {
+          const success = String(log.status).toUpperCase() === "SUCCESS";
+          return `
+            <tr class="transition hover:bg-slate-800/20">
+              <td class="whitespace-nowrap px-5 py-4 font-mono text-xs text-slate-400">${escapeHtml(formatTimestamp(log.createdAt))}</td>
+              <td class="px-5 py-4"><span class="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 font-mono text-[10px] font-semibold text-slate-300">${escapeHtml(log.targetSystem)}</span></td>
+              <td class="px-5 py-4 font-mono text-xs text-slate-300">${escapeHtml(log.action)}</td>
+              <td class="px-5 py-4">
+                <span class="inline-flex items-center gap-2 rounded-full px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-wider ${success ? "bg-emerald-400/10 text-emerald-300" : "bg-rose-400/10 text-rose-300"}">
+                  <span class="h-1.5 w-1.5 rounded-full ${success ? "bg-emerald-300" : "bg-rose-300"}"></span>
+                  ${escapeHtml(log.status)}
+                </span>
+              </td>
+              <td class="max-w-40 truncate px-5 py-4 text-right font-mono text-[10px] text-slate-600">${escapeHtml(log.id)}</td>
+            </tr>`;
+        }).join("");
+      }
+
+      async function loadAuditLogs({ showLoading = false } = {}) {
+        if (showLoading) {
+          auditLogBody.innerHTML = `
+            <tr><td colspan="5" class="px-5 py-14 text-center text-slate-500">Loading immutable audit events…</td></tr>`;
+        }
+
+        try {
+          const data = await apiRequest("/api/audit-logs");
+          const logs = Array.isArray(data?.logs) ? data.logs : [];
+          renderAuditLogs(logs);
+        } catch (error) {
+          auditLogBody.innerHTML = `
+            <tr><td colspan="5" class="px-5 py-14 text-center text-rose-400">Unable to load audit events: ${escapeHtml(error.message)}</td></tr>`;
+          throw error;
+        }
+      }
+
+      function setConnectionStatus(connected) {
+        connectionDot.className = connected
+          ? "status-dot h-2 w-2 rounded-full bg-emerald-400"
+          : "h-2 w-2 rounded-full bg-rose-400";
+        connectionLabel.textContent = connected ? "Live" : "Unavailable";
+      }
+
+      async function refreshDashboard() {
+        const results = await Promise.allSettled([loadApprovals(), loadAuditLogs()]);
+        const connected = results.some((result) => result.status === "fulfilled");
+        setConnectionStatus(connected);
+        if (connected) {
+          lastRefresh.textContent = new Intl.DateTimeFormat(undefined, {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+          }).format(new Date());
+        }
+      }
+
+      eventForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        void triggerEvent();
+      });
+
+      document.querySelectorAll("[data-scenario]").forEach((button) => {
+        button.addEventListener("click", () => {
+          void triggerEvent(SCENARIOS[button.dataset.scenario]);
+        });
+      });
+
+      approvalsContainer.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-approval-action]");
+        if (button) void reviewApproval(button);
+      });
+
+      document.querySelector("#refresh-approvals").addEventListener("click", () => {
+        void loadApprovals({ showLoading: true }).catch(() => setConnectionStatus(false));
+      });
+
+      document.querySelector("#refresh-audit").addEventListener("click", () => {
+        void loadAuditLogs({ showLoading: true }).catch(() => setConnectionStatus(false));
+      });
+
+      populateScenario(SCENARIOS.scenario1);
+      void refreshDashboard();
+      setInterval(() => void refreshDashboard(), 15000);
+    </script>
+  </body>
+</html>
