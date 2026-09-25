@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log*
+dist
+coverage
+.git
+.gitignore
+.vscode
+.agents
+.claude
+.windsurf
+.env
+.env.*
+!.env.example
+src/generated
+*.log

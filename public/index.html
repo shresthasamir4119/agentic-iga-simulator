@@ -995,7 +995,8 @@
 
       document.querySelectorAll("[data-scenario]").forEach((button) => {
         button.addEventListener("click", () => {
-          void triggerEvent(SCENARIOS[button.dataset.scenario]);
+          const scenario = SCENARIOS[button.dataset.scenario];
+          if (scenario) populateScenario(scenario);
         });
       });
 
