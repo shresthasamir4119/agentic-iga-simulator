@@ -16,6 +16,7 @@ export const ProvisioningActionSchema = z.object({
 export const GovernancePlanSchema = z
   .object({
     employeeId: z.string(),
+    eventType: z.string().optional(),
     riskScore: z.number(),
     sodConflictsDetected: z.array(z.string()),
     proposedActions: z.array(ProvisioningActionSchema),
@@ -27,6 +28,21 @@ export const GovernancePlanSchema = z
         path: ["sodConflictsDetected"],
         message:
           "High risk score requires at least one explanatory entry in sodConflictsDetected",
+      });
+    }
+
+    if (
+      (data.eventType === "JOINER" ||
+        data.eventType === "MOVER" ||
+        data.eventType === "TRANSFER") &&
+      data.riskScore >= 0.7 &&
+      data.proposedActions.length === 0
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["proposedActions"],
+        message:
+          "If eventType is JOINER, MOVER, or TRANSFER and riskScore >= 0.70, proposedActions MUST contain at least one action item representing the requested access.",
       });
     }
   });

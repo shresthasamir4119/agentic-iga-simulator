@@ -44,9 +44,12 @@ app.post("/api/webhooks/hr", async (request, reply) => {
   return reply.code(202).send({ accepted: true });
 });
 
-app.get("/api/approvals", async () => ({
+const getPendingApprovals = async () => ({
   requests: await listPendingApprovals(),
-}));
+});
+
+app.get("/api/approvals", getPendingApprovals);
+app.get("/api/approvals/pending", getPendingApprovals);
 
 app.post("/api/approvals/:id/approve", approveRequest);
 app.post("/api/approvals/:id/reject", rejectRequest);

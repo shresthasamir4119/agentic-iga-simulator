@@ -51,7 +51,18 @@ export async function approveRequest(
   let plan: GovernancePlan;
 
   try {
-    plan = GovernancePlanSchema.parse(provisioningRequest.stagedPayload);
+    const stagedPayload = provisioningRequest.stagedPayload;
+    const payload =
+      stagedPayload &&
+      typeof stagedPayload === "object" &&
+      !Array.isArray(stagedPayload)
+        ? stagedPayload
+        : {};
+
+    plan = GovernancePlanSchema.parse({
+      ...payload,
+      eventType: provisioningRequest.eventType,
+    });
   } catch {
     return reply.code(400).send({
       error: "The staged payload does not match the governance plan schema.",

@@ -3,7 +3,15 @@ import { prisma } from "../config/prisma.js";
 export async function listPendingApprovals() {
   const requests = await prisma.provisioningRequest.findMany({
     where: { status: "PENDING_HITL" },
-    include: {
+    select: {
+      id: true,
+      employeeId: true,
+      eventType: true,
+      riskScore: true,
+      sodConflicts: true,
+      stagedPayload: true,
+      status: true,
+      rejectionReason: true,
       employee: {
         select: { firstName: true, lastName: true },
       },

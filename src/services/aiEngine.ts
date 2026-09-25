@@ -6,7 +6,7 @@ import {
   type GovernancePlan,
 } from "../schemas/governance";
 
-const GOVERNANCE_SYSTEM_PROMPT = `You are a Zero-Trust Identity Governance and Access (IGA) Analyst. Analyze employee lifecycle events and propose only justified provisioning actions.
+const SYSTEM_PROMPT = `You are a Zero-Trust Identity Governance and Access (IGA) Analyst. Analyze employee lifecycle events and propose only justified provisioning actions.
 
 Apply these principles:
 - Enforce least privilege, need to know, explicit authorization, and Zero Trust.
@@ -16,7 +16,11 @@ Apply these principles:
 - Use only ACTIVE_DIRECTORY, SLACK, or GITHUB as targetSystem.
 - Use only CREATE_ACCOUNT, DISABLE_ACCOUNT, ADD_TO_GROUP, REMOVE_FROM_GROUP, or GRANT_ORG_ROLE as action.
 - Explain every proposed action in reasoning.
-- Return no proposed actions when provisioning is unnecessary or unsafe.
+- Return no proposed actions only when no access or entitlement change is requested and no provisioning action is necessary.
+- Treat TRANSFER as a MOVER-equivalent access lifecycle event.
+- Whenever an entitlement grant or role change is requested, include at least one concrete proposed action in proposedActions.
+
+CRITICAL INSTRUCTION: You MUST populate 'proposedActions' with the specific access or entitlement changes requested for the employee, EVEN IF the riskScore is high (>= 0.70) or SoD conflicts are detected. Do NOT return an empty proposedActions array just because a request is high risk. The human approver needs to see the exact proposed actions to decide whether to approve them.
 
 Field alignment rules (mandatory):
 Rule 1: If riskScore >= 0.70, sodConflictsDetected CANNOT be empty. You must list specific toxic permissions or security concerns.
@@ -26,6 +30,7 @@ Rule 3: If no risks exist and no actions are required, set riskScore <= 0.20 and
 Return exactly one valid JSON object with this structure and no Markdown or surrounding commentary:
 {
   "employeeId": "string",
+  "eventType": "JOINER | MOVER | TRANSFER | LEEVER | TERMINATION | OTHER",
   "riskScore": 0.0,
   "sodConflictsDetected": ["string"],
   "proposedActions": [
@@ -38,7 +43,7 @@ Return exactly one valid JSON object with this structure and no Markdown or surr
   ]
 }`;
 
-const RETRY_SYSTEM_MESSAGE = `The previous response failed GovernancePlanSchema validation. Re-check and correct the JSON before returning it. If riskScore is >= 0.70, sodConflictsDetected must contain at least one specific toxic permission or security concern. Every proposedActions item must include targetSystem, action, parameters, and reasoning. If there are no risks or required actions, use riskScore <= 0.20 and an empty sodConflictsDetected array. Return only the corrected JSON object.`;
+const RETRY_SYSTEM_MESSAGE = `The previous response failed GovernancePlanSchema validation. Re-check and correct the JSON before returning it. If riskScore is >= 0.70, sodConflictsDetected must contain at least one specific toxic permission or security concern. For JOINER, MOVER, or TRANSFER events with riskScore >= 0.70, proposedActions MUST contain at least one concrete access or entitlement action. Every proposedActions item must include targetSystem, action, parameters, and reasoning. If there are no risks or required actions, use riskScore <= 0.20 and an empty sodConflictsDetected array. Return only the corrected JSON object.`;
 
 async function requestCompletion(
   employeeContext: unknown,
@@ -48,7 +53,7 @@ async function requestCompletion(
   const userPrompt = `Analyze the following governance event.\n\nEvent type: ${JSON.stringify(eventType)}\n\nEmployee context:\n${JSON.stringify(employeeContext, null, 2)}`;
 
   const messages = [
-    { role: "system" as const, content: GOVERNANCE_SYSTEM_PROMPT },
+    { role: "system" as const, content: SYSTEM_PROMPT },
     { role: "user" as const, content: userPrompt },
   ];
 
@@ -73,7 +78,10 @@ async function requestCompletion(
 
 type GovernanceCompletion = Awaited<ReturnType<typeof requestCompletion>>;
 
-function parseCompletion(completion: GovernanceCompletion): GovernancePlan {
+function parseCompletion(
+  completion: GovernanceCompletion,
+  eventType: string,
+): GovernancePlan {
   const content = completion.choices[0]?.message.content;
 
   if (!content) {
@@ -90,7 +98,14 @@ function parseCompletion(completion: GovernanceCompletion): GovernancePlan {
     });
   }
 
-  return GovernancePlanSchema.parse(parsedResponse);
+  const responseWithEventType =
+    parsedResponse &&
+    typeof parsedResponse === "object" &&
+    !Array.isArray(parsedResponse)
+      ? { ...parsedResponse, eventType }
+      : parsedResponse;
+
+  return GovernancePlanSchema.parse(responseWithEventType);
 }
 
 export async function generateGovernancePlan(
@@ -100,7 +115,7 @@ export async function generateGovernancePlan(
   const completion = await requestCompletion(employeeContext, eventType);
 
   try {
-    return parseCompletion(completion);
+    return parseCompletion(completion, eventType);
   } catch (error) {
     if (!(error instanceof z.ZodError)) {
       throw error;
@@ -116,6 +131,6 @@ export async function generateGovernancePlan(
       RETRY_SYSTEM_MESSAGE,
     );
 
-    return parseCompletion(retryCompletion);
+    return parseCompletion(retryCompletion, eventType);
   }
 }
