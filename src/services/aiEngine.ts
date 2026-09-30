@@ -68,7 +68,7 @@ async function requestCompletion(
     return await openWeightAiClient.chat.completions.create({
       model: process.env.OPEN_WEIGHT_MODEL ?? "llama3.1",
       temperature: 0,
-      response_format: { type: "json_object" },
+      response_format: { type: "json_schema", json_schema: { name: "GovernancePlan", schema: GovernancePlanSchema.shape } },
       messages,
     });
   } catch (error) {
