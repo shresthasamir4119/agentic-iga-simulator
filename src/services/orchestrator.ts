@@ -73,6 +73,38 @@ export async function processJmlEvent(
     throw new Error(`Employee ${employeeId} was not found.`);
   }
 
+  const preAiEvaluation = PolicyVetoEngine.evaluateEmployeeStatus(
+    employee.status,
+  );
+
+  if (!preAiEvaluation.passed) {
+    const vetoedRequest = await prisma.provisioningRequest.create({
+      data: {
+        employeeId: employee.id,
+        eventType,
+        riskScore: 1.0,
+        sodConflicts: preAiEvaluation.violations,
+        stagedPayload: toJsonValue({ employeeId, eventType, hrPayload }),
+        status: "VETOED",
+        rejectionReason: preAiEvaluation.violations.join("; "),
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        requestId: vetoedRequest.id,
+        targetSystem: "GOVERNANCE",
+        action: "POLICY_VETO",
+        status: "VETOED",
+        details: toJsonValue({
+          rejectionReason: vetoedRequest.rejectionReason,
+        }),
+      },
+    });
+
+    return vetoedRequest;
+  }
+
   const plan = await generateGovernancePlan(
     { employee, hrPayload },
     eventType,
@@ -80,7 +112,7 @@ export async function processJmlEvent(
   const policyEvaluation = PolicyVetoEngine.evaluate(plan, employee.status);
 
   if (!policyEvaluation.passed) {
-    return prisma.provisioningRequest.create({
+    const vetoedRequest = await prisma.provisioningRequest.create({
       data: {
         employeeId: employee.id,
         eventType,
@@ -91,6 +123,21 @@ export async function processJmlEvent(
         rejectionReason: policyEvaluation.violations.join("; "),
       },
     });
+
+    await prisma.auditLog.create({
+      data: {
+        requestId: vetoedRequest.id,
+        targetSystem: "GOVERNANCE",
+        action: "POLICY_VETO",
+        status: "VETOED",
+        details: toJsonValue({
+          violations: policyEvaluation.violations,
+          rejectionReason: policyEvaluation.violations.join("; "),
+        }),
+      },
+    });
+
+    return vetoedRequest;
   }
 
   if (plan.riskScore >= 0.7) {

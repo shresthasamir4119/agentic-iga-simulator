@@ -24,6 +24,23 @@ export class PolicyVetoEngine {
       "IT Support",
     ]);
 
+  static evaluateEmployeeStatus(
+    employeeStatus: EmployeeStatus,
+  ): PolicyEvaluationResult {
+    const violations: string[] = [];
+
+    if (employeeStatus === "TERMINATED") {
+      violations.push(
+        "Employee status is TERMINATED; event vetoed before AI processing.",
+      );
+    }
+
+    return {
+      passed: violations.length === 0,
+      violations,
+    };
+  }
+
   static evaluate(
     plan: GovernancePlan,
     employeeStatus: EmployeeStatus,
@@ -38,22 +55,6 @@ export class PolicyVetoEngine {
         violations.push(
           `${action.action} cannot be executed for a terminated employee.`,
         );
-      }
-
-      if (
-        action.targetSystem === "ACTIVE_DIRECTORY" &&
-        action.action === "ADD_TO_GROUP"
-      ) {
-        const groupName = action.parameters.groupName;
-
-        if (
-          typeof groupName !== "string" ||
-          !PolicyVetoEngine.ACTIVE_DIRECTORY_GROUPS.has(groupName)
-        ) {
-          violations.push(
-            `Active Directory group "${String(groupName)}" is not allowed.`,
-          );
-        }
       }
     }
 

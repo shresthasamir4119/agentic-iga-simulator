@@ -25,6 +25,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: node_app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     ports:
       - "3000:3000"

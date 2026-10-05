@@ -389,6 +389,7 @@
 
       let toastTimer;
       let errorAlertTimer;
+      const seenVetoAuditIds = new Set();
 
       function escapeHtml(value) {
         return String(value ?? "")
@@ -425,6 +426,18 @@
         errorAlert.classList.remove("flex");
       }
 
+      function showErrorToast(message) {
+        clearTimeout(toastTimer);
+        toast.setAttribute("role", "alert");
+        toast.setAttribute("aria-live", "assertive");
+        toastContent.className = "flex max-w-sm items-center gap-3 rounded-xl border border-rose-500/50 bg-slate-900 px-4 py-3 text-sm text-rose-100 shadow-2xl";
+        toastContent.textContent = getErrorMessage(message, "A connection error occurred.");
+        toast.classList.remove("translate-y-4", "opacity-0");
+        toastTimer = setTimeout(() => {
+          toast.classList.add("translate-y-4", "opacity-0");
+        }, 5000);
+      }
+
       function showError(message, title = "Request failed") {
         clearTimeout(errorAlertTimer);
         errorAlertTitle.textContent = title;
@@ -432,6 +445,7 @@
         errorAlert.classList.remove("hidden");
         errorAlert.classList.add("flex");
         errorAlertTimer = setTimeout(hideError, 6000);
+        showErrorToast(message);
       }
 
       function showConnectionWarning() {
@@ -444,6 +458,38 @@
         connectionWarning.classList.remove("flex");
       }
 
+      function showWarningToast(message) {
+        clearTimeout(toastTimer);
+        toast.setAttribute("role", "status");
+        toast.setAttribute("aria-live", "polite");
+        toastContent.className = "flex max-w-sm items-center gap-3 rounded-xl border border-amber-400/60 bg-amber-950/95 px-4 py-3 text-sm text-amber-100 shadow-2xl";
+        toastContent.textContent = message;
+        toast.classList.remove("translate-y-4", "opacity-0");
+        toastTimer = setTimeout(() => {
+          toast.classList.add("translate-y-4", "opacity-0");
+        }, 5000);
+      }
+
+      function notifyPolicyVeto(logs) {
+        logs
+          .filter((log) => String(log.status).toUpperCase() === "VETOED" || String(log.action).toUpperCase() === "POLICY_VETO")
+          .filter((log) => {
+            const key = log.id ?? `${log.action}:${log.createdAt}`;
+            if (seenVetoAuditIds.has(key)) return false;
+            seenVetoAuditIds.add(key);
+            return true;
+          })
+          .forEach((log) => {
+            const violations = Array.isArray(log.details?.violations)
+              ? log.details.violations.filter((violation) => typeof violation === "string" && violation.trim())
+              : [];
+            const reason = violations.length > 0
+              ? violations.join("; ")
+              : "Request blocked by governance policy.";
+            showWarningToast(`Policy Veto: ${reason}`);
+          });
+      }
+
       function showToast(message, tone = "success") {
         if (tone === "error") {
           showError(message);
@@ -451,6 +497,8 @@
         }
 
         clearTimeout(toastTimer);
+        toast.setAttribute("role", "status");
+        toast.setAttribute("aria-live", "polite");
         toastContent.className = "flex max-w-sm items-center gap-3 rounded-xl border border-emerald-500/40 bg-slate-900 px-4 py-3 text-sm text-emerald-100 shadow-2xl";
         toastContent.textContent = message;
         toast.classList.remove("translate-y-4", "opacity-0");
@@ -777,15 +825,27 @@
         }
 
         auditLogBody.innerHTML = logs.map((log) => {
-          const success = String(log.status).toUpperCase() === "SUCCESS";
+          const status = String(log.status).toUpperCase();
+          const success = status === "SUCCESS";
+          const vetoed = status === "VETOED" || String(log.action).toUpperCase() === "POLICY_VETO";
+          const statusClasses = success
+            ? "bg-emerald-400/10 text-emerald-300"
+            : vetoed
+              ? "bg-amber-400/10 text-amber-300"
+              : "bg-rose-400/10 text-rose-300";
+          const dotClasses = success
+            ? "bg-emerald-300"
+            : vetoed
+              ? "bg-amber-300"
+              : "bg-rose-300";
           return `
             <tr class="transition hover:bg-slate-800/20">
               <td class="whitespace-nowrap px-5 py-4 font-mono text-xs text-slate-400">${escapeHtml(formatTimestamp(log.createdAt))}</td>
               <td class="px-5 py-4"><span class="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 font-mono text-[10px] font-semibold text-slate-300">${escapeHtml(log.targetSystem)}</span></td>
               <td class="px-5 py-4 font-mono text-xs text-slate-300">${escapeHtml(log.action)}</td>
               <td class="px-5 py-4">
-                <span class="inline-flex items-center gap-2 rounded-full px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-wider ${success ? "bg-emerald-400/10 text-emerald-300" : "bg-rose-400/10 text-rose-300"}">
-                  <span class="h-1.5 w-1.5 rounded-full ${success ? "bg-emerald-300" : "bg-rose-300"}"></span>
+                <span class="inline-flex items-center gap-2 rounded-full px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-wider ${statusClasses}">
+                  <span class="h-1.5 w-1.5 rounded-full ${dotClasses}"></span>
                   ${escapeHtml(log.status)}
                 </span>
               </td>
@@ -803,6 +863,7 @@
         try {
           const data = await apiRequest("/api/audit-logs");
           const logs = Array.isArray(data?.logs) ? data.logs : [];
+          notifyPolicyVeto(logs);
           renderAuditLogs(logs);
         } catch (error) {
           const message = getErrorMessage(error, "The audit log could not be loaded.");
