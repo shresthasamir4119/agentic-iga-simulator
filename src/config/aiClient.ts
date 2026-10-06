@@ -14,5 +14,3 @@ export const aiClient = new OpenAI({
   baseURL,
   apiKey,
 });
-
-export default aiClient;

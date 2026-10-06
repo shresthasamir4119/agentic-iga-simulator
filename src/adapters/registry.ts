@@ -1,7 +1,7 @@
-import { ActiveDirectoryAdapter } from "./activeDirectory";
-import { GitHubAdapter } from "./github";
-import type { Adapter } from "./interface";
-import { SlackAdapter } from "./slack";
+import { ActiveDirectoryAdapter } from "./activeDirectory.js";
+import { GitHubAdapter } from "./github.js";
+import type { Adapter } from "./interface.js";
+import { SlackAdapter } from "./slack.js";
 
 export class AdapterRegistry {
   private static readonly adapters: ReadonlyMap<string, Adapter> = new Map([

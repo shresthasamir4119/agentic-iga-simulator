@@ -1,10 +1,10 @@
-import type { Adapter } from "./interface";
+import type { Adapter, AdapterExecutionResult } from "./interface.js";
 
 export class ActiveDirectoryAdapter implements Adapter {
   async execute(
     action: string,
-    parameters: Record<string, any>,
-  ): Promise<any> {
+    parameters: Record<string, unknown>,
+  ): Promise<AdapterExecutionResult> {
     await new Promise<void>((resolve) => setTimeout(resolve, 300));
 
     console.log(`[ActiveDirectoryAdapter] Executing ${action}`, parameters);

@@ -1,10 +1,10 @@
 import "dotenv/config";
 import { z } from "zod";
-import openWeightAiClient from "../config/aiClient";
+import { aiClient } from "../config/aiClient.js";
 import {
   GovernancePlanSchema,
   type GovernancePlan,
-} from "../schemas/governance";
+} from "../schemas/governance.js";
 
 const SYSTEM_PROMPT = `You are a Zero-Trust IGA AI Analyst. Analyze the HR event and output a JSON governance plan.
 
@@ -58,7 +58,7 @@ async function requestCompletion(
   }
 
   try {
-    return await openWeightAiClient.chat.completions.create({
+    return await aiClient.chat.completions.create({
       model: process.env.OPEN_WEIGHT_MODEL ?? "llama3.1",
       temperature: 0,
       response_format: {

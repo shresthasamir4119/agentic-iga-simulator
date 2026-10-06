@@ -1,7 +1,7 @@
 import type {
   GovernancePlan,
   ProvisioningAction,
-} from "../schemas/governance";
+} from "../schemas/governance.js";
 
 export type EmployeeStatus = "ACTIVE" | "SUSPENDED" | "TERMINATED";
 
@@ -60,15 +60,6 @@ export class PolicyVetoEngine {
   private static readonly TERMINATED_BLOCKED_ACTIONS: ReadonlySet<
     ProvisioningAction["action"]
   > = new Set(["CREATE_ACCOUNT", "ADD_TO_GROUP", "GRANT_ORG_ROLE"]);
-
-  private static readonly ACTIVE_DIRECTORY_GROUPS: ReadonlySet<string> =
-    new Set([
-      "All Employees",
-      "Engineering",
-      "Finance",
-      "Human Resources",
-      "IT Support",
-    ]);
 
   static evaluateEmployeeStatus(
     employeeStatus: EmployeeStatus,
