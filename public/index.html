@@ -200,82 +200,7 @@
               <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Preset Scenarios</p>
               <p class="text-xs text-slate-600">Select one to populate and submit</p>
             </div>
-            <div class="grid gap-3">
-              <button type="button" data-scenario="scenario1" class="scenario-button group rounded-2xl border border-emerald-400/20 bg-emerald-400/5 p-4 text-left hover:border-emerald-400/50 hover:bg-emerald-400/10">
-                <div class="flex items-start justify-between gap-4">
-                  <div>
-                    <div class="mb-2 flex items-center gap-2">
-                      <span class="rounded-md bg-emerald-400/10 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-emerald-300">Low Risk</span>
-                      <span class="font-mono text-[10px] text-slate-600">SCN-01</span>
-                    </div>
-                    <p class="font-semibold text-slate-100">Scenario 1: Low-Risk Joiner (Alice Chen)</p>
-                    <p class="mt-1 text-xs leading-5 text-slate-500">Manager notes: Standard frontend dev onboarding.</p>
-                    <p class="mt-2 text-xs leading-5 text-emerald-200/80">Expected Result: AI Risk Score &lt; 0.20 • Auto-Approved • Adapters execute automatically • Green Audit Log entry.</p>
-                  </div>
-                  <svg class="mt-1 h-5 w-5 shrink-0 text-emerald-300 transition group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" /></svg>
-                </div>
-              </button>
-
-              <button type="button" data-scenario="scenario2" class="scenario-button group rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4 text-left hover:border-amber-400/50 hover:bg-amber-400/10">
-                <div class="flex items-start justify-between gap-4">
-                  <div>
-                    <div class="mb-2 flex items-center gap-2">
-                      <span class="rounded-md bg-amber-400/10 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-amber-300">High Risk / SoD</span>
-                      <span class="font-mono text-[10px] text-slate-600">SCN-02</span>
-                    </div>
-                    <p class="font-semibold text-slate-100">Scenario 2: Toxic SoD Mover (Bob Martinez)</p>
-                    <p class="mt-1 text-xs leading-5 text-slate-500">Engineering → Finance. Manager notes: Bob transferred to Finance but needs to retain GitHub release manager rights.</p>
-                    <p class="mt-2 text-xs leading-5 text-amber-200/80">Expected Result: AI Risk Score ~0.88 • SoD Conflict Flagged • Routed to Pending Approvals with expected actions displayed.</p>
-                  </div>
-                  <svg class="mt-1 h-5 w-5 shrink-0 text-amber-300 transition group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" /></svg>
-                </div>
-              </button>
-
-              <button type="button" data-scenario="scenario3" class="scenario-button group rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4 text-left hover:border-cyan-400/50 hover:bg-cyan-400/10">
-                <div class="flex items-start justify-between gap-4">
-                  <div>
-                    <div class="mb-2 flex items-center gap-2">
-                      <span class="rounded-md bg-cyan-400/10 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-cyan-300">Privilege Creep</span>
-                      <span class="font-mono text-[10px] text-slate-600">SCN-03</span>
-                    </div>
-                    <p class="font-semibold text-slate-100">Scenario 3: Privilege Creep Mover (Carol Danvers)</p>
-                    <p class="mt-1 text-xs leading-5 text-slate-500">Customer Support → DevOps. Manager notes: Carol moved from Support to DevOps. Grant AWS Prod and revoke Zendesk.</p>
-                    <p class="mt-2 text-xs leading-5 text-cyan-200/80">Expected Result: AI Auto-Approve (Risk ~0.40) • Stages DevOps grants and revokes legacy Support tools.</p>
-                  </div>
-                  <svg class="mt-1 h-5 w-5 shrink-0 text-cyan-300 transition group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" /></svg>
-                </div>
-              </button>
-
-              <button type="button" data-scenario="scenario4" class="scenario-button group rounded-2xl border border-rose-400/20 bg-rose-400/5 p-4 text-left hover:border-rose-400/50 hover:bg-rose-400/10">
-                <div class="flex items-start justify-between gap-4">
-                  <div>
-                    <div class="mb-2 flex items-center gap-2">
-                      <span class="rounded-md bg-rose-400/10 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-rose-300">Policy Veto</span>
-                      <span class="font-mono text-[10px] text-slate-600">SCN-04</span>
-                    </div>
-                    <p class="font-semibold text-slate-100">Scenario 4: Policy Veto Leaver (Charlie Davis)</p>
-                    <p class="mt-1 text-xs leading-5 text-slate-500">Manager notes: Re-hiring Charlie as a consultant.</p>
-                    <p class="mt-2 text-xs leading-5 text-rose-200/80">Expected Result: Hard-blocked by the Policy Veto Engine (HTTP 400) • Red error toast banner • VETOED Audit Log entry.</p>
-                  </div>
-                  <svg class="mt-1 h-5 w-5 shrink-0 text-rose-300 transition group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" /></svg>
-                </div>
-              </button>
-
-              <button type="button" data-scenario="scenario5" class="scenario-button group rounded-2xl border border-violet-400/20 bg-violet-400/5 p-4 text-left hover:border-violet-400/50 hover:bg-violet-400/10">
-                <div class="flex items-start justify-between gap-4">
-                  <div>
-                    <div class="mb-2 flex items-center gap-2">
-                      <span class="rounded-md bg-violet-400/10 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-violet-300">Break-Glass</span>
-                      <span class="font-mono text-[10px] text-slate-600">SCN-05</span>
-                    </div>
-                    <p class="font-semibold text-slate-100">Scenario 5: Emergency Break-Glass (Elena Rostova)</p>
-                    <p class="mt-1 text-xs leading-5 text-slate-500">Manager notes: Emergency break-glass access required for PII database incident investigation.</p>
-                    <p class="mt-2 text-xs leading-5 text-violet-200/80">Expected Result: AI Risk Score ~0.92 • Routed to Pending Approvals • Time-bound entitlement parameters (ttl_hours: 4).</p>
-                  </div>
-                  <svg class="mt-1 h-5 w-5 shrink-0 text-violet-300 transition group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" /></svg>
-                </div>
-              </button>
-            </div>
+            <div id="scenario-grid" class="grid gap-3"></div>
           </div>
         </form>
       </section>
@@ -333,20 +258,21 @@
         </div>
 
         <div class="overflow-hidden rounded-2xl border border-slate-800">
-          <div class="overflow-x-auto">
+          <div class="max-h-96 overflow-auto">
             <table class="w-full min-w-[760px] text-left text-sm">
-              <thead class="border-b border-slate-800 bg-slate-950/70 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
+              <thead class="sticky top-0 z-10 border-b border-slate-800 bg-slate-950 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-500">
                 <tr>
                   <th class="px-5 py-4 font-semibold">Timestamp</th>
                   <th class="px-5 py-4 font-semibold">Target System</th>
                   <th class="px-5 py-4 font-semibold">Action</th>
+                  <th class="px-5 py-4 font-semibold">Group</th>
                   <th class="px-5 py-4 font-semibold">Status</th>
                   <th class="px-5 py-4 text-right font-semibold">Event ID</th>
                 </tr>
               </thead>
               <tbody id="audit-log-body" class="divide-y divide-slate-800/80">
                 <tr>
-                  <td colspan="5" class="px-5 py-14 text-center text-slate-500">Loading immutable audit events…</td>
+                  <td colspan="6" class="px-5 py-14 text-center text-slate-500">Loading immutable audit events…</td>
                 </tr>
               </tbody>
             </table>
@@ -385,6 +311,43 @@
       const errorAlertMessage = document.querySelector("#error-alert-message");
       const errorAlertClose = document.querySelector("#error-alert-close");
       const connectionWarning = document.querySelector("#connection-warning");
+
+      const SCENARIO_THEMES = {
+        scenario1: { badge: "Low Risk", color: "emerald" },
+        scenario2: { badge: "High Risk / SoD", color: "amber" },
+        scenario3: { badge: "Privilege Creep", color: "orange" },
+        scenario4: { badge: "Policy Veto", color: "rose" },
+        scenario5: { badge: "Break-Glass", color: "violet" },
+      };
+
+      function scenarioButtonMarkup(key, scenario, index) {
+        const theme = SCENARIO_THEMES[key] ?? { badge: scenario.eventType, color: "slate" };
+        const color = theme.color;
+        const name = `${scenario.hrPayload.firstName ?? ""} ${scenario.hrPayload.lastName ?? ""}`.trim();
+        const managerNotes = scenario.hrPayload.managerNotes ?? "";
+
+        return `
+          <button type="button" data-scenario="${key}" class="scenario-button group rounded-2xl border border-${color}-400/20 bg-${color}-400/5 p-4 text-left hover:border-${color}-400/50 hover:bg-${color}-400/10">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <div class="mb-2 flex items-center gap-2">
+                  <span class="rounded-md bg-${color}-400/10 px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-wider text-${color}-300">${escapeHtml(theme.badge)}</span>
+                  <span class="font-mono text-[10px] text-slate-600">SCN-0${index + 1}</span>
+                </div>
+                <p class="font-semibold text-slate-100">Scenario ${index + 1}: ${escapeHtml(name)} <span class="font-mono text-xs font-bold text-${color}-300">(${escapeHtml(scenario.eventType)})</span></p>
+                <p class="mt-1 text-xs leading-5 text-slate-500">Manager notes: ${escapeHtml(managerNotes)}</p>
+                <p class="mt-2 text-xs leading-5 text-${color}-200/80">Expected Result: ${escapeHtml(scenario.expectedResult ?? "")}</p>
+              </div>
+              <svg class="mt-1 h-5 w-5 shrink-0 text-${color}-300 transition group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" /></svg>
+            </div>
+          </button>`;
+      }
+
+      const scenarioGrid = document.querySelector("#scenario-grid");
+      scenarioGrid.innerHTML = Object.entries(SCENARIOS)
+        .map(([key, scenario], index) => scenarioButtonMarkup(key, scenario, index))
+        .join("");
+
       const scenarioButtons = [...document.querySelectorAll("[data-scenario]")];
 
       let toastTimer;
@@ -820,7 +783,7 @@
       function renderAuditLogs(logs) {
         if (logs.length === 0) {
           auditLogBody.innerHTML = `
-            <tr><td colspan="5" class="px-5 py-14 text-center text-slate-500">No audit events have been recorded.</td></tr>`;
+            <tr><td colspan="6" class="px-5 py-14 text-center text-slate-500">No audit events have been recorded.</td></tr>`;
           return;
         }
 
@@ -843,6 +806,7 @@
               <td class="whitespace-nowrap px-5 py-4 font-mono text-xs text-slate-400">${escapeHtml(formatTimestamp(log.createdAt))}</td>
               <td class="px-5 py-4"><span class="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 font-mono text-[10px] font-semibold text-slate-300">${escapeHtml(log.targetSystem)}</span></td>
               <td class="px-5 py-4 font-mono text-xs text-slate-300">${escapeHtml(log.action)}</td>
+              <td class="px-5 py-4 font-mono text-xs text-cyan-200/80">${escapeHtml(log.details?.groupName ?? "—")}</td>
               <td class="px-5 py-4">
                 <span class="inline-flex items-center gap-2 rounded-full px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-wider ${statusClasses}">
                   <span class="h-1.5 w-1.5 rounded-full ${dotClasses}"></span>
@@ -857,7 +821,7 @@
       async function loadAuditLogs({ showLoading = false } = {}) {
         if (showLoading) {
           auditLogBody.innerHTML = `
-            <tr><td colspan="5" class="px-5 py-14 text-center text-slate-500">Loading immutable audit events…</td></tr>`;
+            <tr><td colspan="6" class="px-5 py-14 text-center text-slate-500">Loading immutable audit events…</td></tr>`;
         }
 
         try {
@@ -869,7 +833,7 @@
           const message = getErrorMessage(error, "The audit log could not be loaded.");
           showError(message, "Audit log unavailable");
           auditLogBody.innerHTML = `
-            <tr><td colspan="5" class="px-5 py-14 text-center text-rose-400">Unable to load audit events: ${escapeHtml(message)}</td></tr>`;
+            <tr><td colspan="6" class="px-5 py-14 text-center text-rose-400">Unable to load audit events: ${escapeHtml(message)}</td></tr>`;
           throw error;
         }
       }

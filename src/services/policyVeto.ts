@@ -10,6 +10,52 @@ export interface PolicyEvaluationResult {
   violations: string[];
 }
 
+export interface VetoResult {
+  isVetoed: boolean;
+  reason?: string;
+  forcedRiskScore?: number;
+}
+
+/**
+ * Post-AI Veto: Forbidden Privilege Keyword Scan.
+ * Flags implicit privilege escalation where a non-admin is granted
+ * wildcard/root-level access.
+ */
+export function evaluatePolicyVeto(
+  payload: Record<string, unknown>,
+  aiResponse: GovernancePlan,
+): VetoResult {
+  const forbiddenKeywords = [
+    "wildcard",
+    "fullaccess",
+    "full_access",
+    "root",
+    "superadmin",
+    "all_databases",
+  ];
+
+  const containsForbiddenPrivilege = aiResponse.proposedActions.some(
+    (action) => {
+      const searchable =
+        `${action.targetSystem} ${JSON.stringify(action.parameters)} ${action.reasoning}`.toLowerCase();
+
+      return forbiddenKeywords.some((keyword) =>
+        searchable.includes(keyword),
+      );
+    },
+  );
+
+  if (containsForbiddenPrivilege && payload.role !== "Platform-Admin") {
+    return {
+      isVetoed: true,
+      reason: `VETOED: Detected implicit privilege escalation. Non-admin user targeted a resource containing restricted keywords ('Root/FullAccess').`,
+      forcedRiskScore: 1.0,
+    };
+  }
+
+  return { isVetoed: false };
+}
+
 export class PolicyVetoEngine {
   private static readonly TERMINATED_BLOCKED_ACTIONS: ReadonlySet<
     ProvisioningAction["action"]

@@ -16,7 +16,7 @@ export const SCENARIOS = Object.freeze({
   scenario2: {
     employeeId: "22222222-2222-4222-8222-222222222222",
     eventType: "MOVER",
-    expectedResult: "AI Risk Score ~0.88; SoD Conflict Flagged; routed to Pending Approvals with expected actions displayed.",
+    expectedResult: "AI Risk Score >0.7; SoD Conflict Flagged; routed to Pending Approvals with expected actions displayed.",
     hrPayload: {
       firstName: "Bob",
       lastName: "Martinez",
@@ -32,7 +32,7 @@ export const SCENARIOS = Object.freeze({
   scenario3: {
     employeeId: "33333333-3333-4333-8333-333333333333",
     eventType: "MOVER",
-    expectedResult: "AI Auto-Approve (Risk ~0.40); stage DevOps grants and revoke legacy Support tools.",
+    expectedResult: "Vetoed by Policy Veto Engine post the ai processing.",
     hrPayload: {
       firstName: "Carol",
       lastName: "Danvers",
@@ -41,7 +41,7 @@ export const SCENARIOS = Object.freeze({
       title: "Site Reliability Engineer",
       previousDepartment: "Customer Support",
       targetDepartment: "DevOps",
-      managerNotes: "Carol moved from Support to DevOps. Grant AWS Prod and revoke Zendesk.",
+      managerNotes: "Carol moved from Support to DevOps. Grant AWS Prod fullaccess and revoke Zendesk.",
       requestedGroups: ["AD_DevOps_Team", "AWS_Production_Admins"],
       requestedRevocations: ["Zendesk"]
     }
@@ -64,7 +64,7 @@ export const SCENARIOS = Object.freeze({
   scenario5: {
     employeeId: "55555555-5555-4555-8555-555555555555",
     eventType: "ELEVATION_REQUEST",
-    expectedResult: "AI Risk Score ~0.92; routed to Pending Approvals with time-bound entitlement parameters (ttl_hours: 4).",
+    expectedResult: "AI Risk Score >0.7; routed to Pending Approvals with time-bound entitlement parameters (ttl_hours: 4).",
     hrPayload: {
       firstName: "Elena",
       lastName: "Rostova",

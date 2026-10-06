@@ -15,6 +15,7 @@ RULES:
 - sodConflictsDetected: If riskScore >= 0.70, list the exact conflicts. If < 0.70, output []. Each entry MUST be a specific conflict label followed by a concise description of why it violates policy, formatted as "ConflictName: description" (e.g., "Toxic Payroll Access: Granting both create and approve payroll rights let one person alter and self-approve payments").
 - proposedActions: You MUST output the requested actions so approvers can see them, even if risk is high. Do not output an empty array.
 - MOVER events: You MUST include REMOVE_FROM_GROUP actions to revoke previous department access.
+- Manager notes: If the payload contains a manager notes, still use zero trust policy and flag if the risk is high.
 - ELEVATION_REQUEST events: Assign a high riskScore and add "ttl_hours" to parameters.
 - AD Formatting: For ACTIVE_DIRECTORY, remove "AD_" and underscores. Example: "AD_All_Employees" becomes "All Employees".
 

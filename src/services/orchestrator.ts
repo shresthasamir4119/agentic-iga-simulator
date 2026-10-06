@@ -6,7 +6,10 @@ import type {
 import { AdapterRegistry } from "../adapters/registry.js";
 import type { GovernancePlan } from "../schemas/governance.js";
 import { generateGovernancePlan } from "./aiEngine.js";
-import { PolicyVetoEngine } from "./policyVeto.js";
+import {
+  evaluatePolicyVeto,
+  PolicyVetoEngine,
+} from "./policyVeto.js";
 
 function toJsonValue(value: unknown): Prisma.InputJsonValue {
   const serialized = JSON.stringify(value);
@@ -18,11 +21,65 @@ function toJsonValue(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(serialized) as Prisma.InputJsonValue;
 }
 
+async function recordAuditLog(
+  requestId: string,
+  targetSystem: string,
+  action: string,
+  status: string,
+  details: unknown,
+): Promise<void> {
+  await prisma.auditLog.create({
+    data: {
+      requestId,
+      targetSystem,
+      action,
+      status,
+      details: toJsonValue(details),
+    },
+  });
+}
+
+async function vetoRequest(params: {
+  employeeId: string;
+  eventType: string;
+  riskScore: number;
+  sodConflicts: string[];
+  stagedPayload: unknown;
+  rejectionReason: string;
+}): Promise<ProvisioningRequest> {
+  const vetoedRequest = await prisma.provisioningRequest.create({
+    data: {
+      employeeId: params.employeeId,
+      eventType: params.eventType,
+      riskScore: params.riskScore,
+      sodConflicts: params.sodConflicts,
+      stagedPayload: toJsonValue(params.stagedPayload),
+      status: "VETOED",
+      rejectionReason: params.rejectionReason,
+    },
+  });
+
+  await recordAuditLog(
+    vetoedRequest.id,
+    "GOVERNANCE",
+    "POLICY_VETO",
+    "VETOED",
+    { rejectionReason: params.rejectionReason },
+  );
+
+  return vetoedRequest;
+}
+
 export async function executeProvisioningActions(
   requestId: string,
   plan: GovernancePlan,
 ): Promise<void> {
   for (const proposedAction of plan.proposedActions) {
+    const groupName =
+      typeof proposedAction.parameters?.groupName === "string"
+        ? proposedAction.parameters.groupName
+        : null;
+
     try {
       const response = await AdapterRegistry.getAdapter(
         proposedAction.targetSystem,
@@ -32,30 +89,27 @@ export async function executeProvisioningActions(
         throw new Error("The provisioning adapter reported a failed action.");
       }
 
-      await prisma.auditLog.create({
-        data: {
-          requestId,
-          targetSystem: proposedAction.targetSystem,
-          action: proposedAction.action,
-          status: "SUCCESS",
-          details: toJsonValue({ response }),
-        },
-      });
+      await recordAuditLog(
+        requestId,
+        proposedAction.targetSystem,
+        proposedAction.action,
+        "SUCCESS",
+        { response, groupName },
+      );
     } catch (error) {
-      await prisma.auditLog.create({
-        data: {
-          requestId,
-          targetSystem: proposedAction.targetSystem,
-          action: proposedAction.action,
-          status: "FAILURE",
-          details: toJsonValue({
-            error:
-              error instanceof Error
-                ? { name: error.name, message: error.message }
-                : { message: String(error) },
-          }),
+      await recordAuditLog(
+        requestId,
+        proposedAction.targetSystem,
+        proposedAction.action,
+        "FAILURE",
+        {
+          groupName,
+          error:
+            error instanceof Error
+              ? { name: error.name, message: error.message }
+              : { message: String(error) },
         },
-      });
+      );
     }
   }
 }
@@ -78,66 +132,32 @@ export async function processJmlEvent(
   );
 
   if (!preAiEvaluation.passed) {
-    const vetoedRequest = await prisma.provisioningRequest.create({
-      data: {
-        employeeId: employee.id,
-        eventType,
-        riskScore: 1.0,
-        sodConflicts: preAiEvaluation.violations,
-        stagedPayload: toJsonValue({ employeeId, eventType, hrPayload }),
-        status: "VETOED",
-        rejectionReason: preAiEvaluation.violations.join("; "),
-      },
+    return vetoRequest({
+      employeeId: employee.id,
+      eventType,
+      riskScore: 1.0,
+      sodConflicts: preAiEvaluation.violations,
+      stagedPayload: { employeeId, eventType, hrPayload },
+      rejectionReason: preAiEvaluation.violations.join("; "),
     });
-
-    await prisma.auditLog.create({
-      data: {
-        requestId: vetoedRequest.id,
-        targetSystem: "GOVERNANCE",
-        action: "POLICY_VETO",
-        status: "VETOED",
-        details: toJsonValue({
-          rejectionReason: vetoedRequest.rejectionReason,
-        }),
-      },
-    });
-
-    return vetoedRequest;
   }
 
   const plan = await generateGovernancePlan(
     { employee, hrPayload },
     eventType,
   );
-  const policyEvaluation = PolicyVetoEngine.evaluate(plan, employee.status);
 
-  if (!policyEvaluation.passed) {
-    const vetoedRequest = await prisma.provisioningRequest.create({
-      data: {
-        employeeId: employee.id,
-        eventType,
-        riskScore: plan.riskScore,
-        sodConflicts: plan.sodConflictsDetected,
-        stagedPayload: toJsonValue(plan),
-        status: "VETOED",
-        rejectionReason: policyEvaluation.violations.join("; "),
-      },
+  const veto = evaluatePolicyVeto({ ...hrPayload, eventType }, plan);
+
+  if (veto.isVetoed) {
+    return vetoRequest({
+      employeeId: employee.id,
+      eventType,
+      riskScore: veto.forcedRiskScore ?? plan.riskScore,
+      sodConflicts: veto.reason ? [veto.reason] : plan.sodConflictsDetected,
+      stagedPayload: plan,
+      rejectionReason: veto.reason ?? "Policy veto",
     });
-
-    await prisma.auditLog.create({
-      data: {
-        requestId: vetoedRequest.id,
-        targetSystem: "GOVERNANCE",
-        action: "POLICY_VETO",
-        status: "VETOED",
-        details: toJsonValue({
-          violations: policyEvaluation.violations,
-          rejectionReason: policyEvaluation.violations.join("; "),
-        }),
-      },
-    });
-
-    return vetoedRequest;
   }
 
   if (plan.riskScore >= 0.7) {
