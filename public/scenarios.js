@@ -42,7 +42,7 @@ export const SCENARIOS = Object.freeze({
       previousDepartment: "Customer Support",
       targetDepartment: "DevOps",
       managerNotes: "Carol moved from Support to DevOps. Grant AWS Prod fullaccess and revoke Zendesk.",
-      requestedGroups: ["AD_DevOps_Team", "AWS_Production_Admins"],
+      requestedGroups: ["AD_DevOps_Team", "AWS_Production_SuperAdmin"],
       requestedRevocations: ["Zendesk"]
     }
   },

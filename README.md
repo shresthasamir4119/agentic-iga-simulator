@@ -2,6 +2,10 @@
 
 An Agentic Identity Governance and Administration (IGA) system built with Node.js, TypeScript, Fastify, Prisma, and PostgreSQL. This application processes Joiner/Mover/Leaver (JML) events through an AI-powered orchestration layer with human-in-the-loop (HITL) approvals for sensitive provisioning requests.
 
+Every day, enterprise IT and security teams face a critical challenge: slow down business velocity by manually reviewing access tickets, or rush approvals and risk catastrophic security blind spots. Traditional Identity Governance and Administration (IGA) processes leave organizations vulnerable to lingering "zombie credentials" from offboarded staff and toxic privilege creep when employees switch roles without old permissions being revoked.
+
+The Agentic IGA Simulator solves this by pairing deterministic security guardrails with autonomous AI reasoning. By automatically executing low-risk requests, revoking legacy access during internal transfers, and hard-blocking invalid attempts at the perimeter, it delivers zero-touch velocity while keeping critical infrastructure secure.
+
 ## Features
 
 - **HR Webhook Processing** - Accepts HR events to trigger provisioning workflows
